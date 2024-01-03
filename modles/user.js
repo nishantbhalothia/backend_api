@@ -24,12 +24,20 @@ userSchema.pre('save', async function (next) {
 // Generate JWT
 userSchema.methods.generateAuthToken = async function () {
     try {
-        const token = jwt.sign({ _id: this._id }, process.env.TOKEN_SECRET);
+        const token = jwt.sign({ _id: this._id }, process.env.AUTH_TOKEN_SECRET, { expiresIn: '4h' });
         return token;
     } catch (error) {
         console.error(error);
     }
 };
+userSchema.methods.generateRefreshToken = async function () {
+    try {
+        const token = jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+        return token;
+    } catch (error) {
+        console.error(error);
+    }
+}
 
 // Compare password
 userSchema.methods.comparePassword = async function (password) {

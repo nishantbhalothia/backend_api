@@ -11,7 +11,7 @@ const router = require('./routes/index');
 // Connect to DB
 async function connectToDB() {
     try {
-        await mongoose.connect(process.env.DB_CONNECT, { useNewUrlParser: true, useUnifiedTopology: true });
+        await mongoose.connect(`${process.env.DB_CONNECT}/${process.env.DATABASE_NAME}`, { useNewUrlParser: true, useUnifiedTopology: true });
         console.log('Connected to DB');
     } catch (error) {
         console.error('DB Connection error:', error);
