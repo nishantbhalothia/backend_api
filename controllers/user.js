@@ -21,6 +21,7 @@ module.exports.create = async (req, res) => {
 };
 
 module.exports.login = async (req, res) => {
+    console.log("userController_login", req.body);
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -38,11 +39,34 @@ module.exports.login = async (req, res) => {
     }
     const authToken = await user.generateAuthToken();
     const refreshToken = await user.generateRefreshToken();
+    console.log("refreshToken : ", refreshToken, " ","authToken : ", authToken);
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       path: "/api/users/refreshToken",
     })
     .json({ authToken });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports.refreshToken = async (req, res) => {
+    console.log("userController_refreshToken", req.body);
+  try {
+    const token = req.cookies?.refreshToken || req.body?.refreshToken || req.headers?.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized." });
+    }
+    const verified = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+    if (!verified) {
+      return res.status(401).json({ message: "Unauthorized." });
+    }
+    const user = await User.findById(verified._id);
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized." });
+    }
+    const authToken = await user.generateAuthToken();
+    res.json({ authToken });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
