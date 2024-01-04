@@ -1,4 +1,5 @@
 const User = require("../modles/user");
+const bcrypt = require('bcryptjs');
 
 module.exports.create = async (req, res) => {
   try {
@@ -140,7 +141,10 @@ module.exports.updateUser = async (req, res) => {
       if (isMatch) {
         return res.status(400).json({ message: "New password must be different from current password" });
       }
-      user.password = password;
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      user.password = hashedPassword;
     }
     if (name) {
       user.name = name;
@@ -156,6 +160,18 @@ module.exports.updateUser = async (req, res) => {
       .status(200)
       .json(updatedUser);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    // res.status(500).json({ error: error.message });
+    if (error.code === 11000) {
+      const duplicatedFieldMatch = error.message.match(/index: (\w*)_1/);
+      const duplicatedField = duplicatedFieldMatch ? duplicatedFieldMatch[1] : null;
+
+      if (duplicatedField) {
+          res.status(400).json({ error: `${duplicatedField.charAt(0).toUpperCase() + duplicatedField.slice(1)} already exists.` });
+      } else {
+          res.status(400).json({ error: "Duplicate key error." });
+      }
+  } else {
+      res.status(500).json({ error: error.message });
+  }
   }
 };
