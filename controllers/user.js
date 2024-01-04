@@ -21,9 +21,9 @@ module.exports.create = async (req, res) => {
 };
 
 module.exports.login = async (req, res) => {
-    console.log("userController_login", req.body);
+    console.log("userController_login Body : ", req.body);
   try {
-    const { email, password, phone } = req.body;
+    const { email, phone, password, } = req.body;
     if ((!email || !phone) && !password) {
       return res
         .status(400)
@@ -36,7 +36,7 @@ module.exports.login = async (req, res) => {
         ]
     });
 
-    console.log("userController_login", user);
+    console.log("userController_login user : ", user);
     
     if (!user) {
       return res.status(400).json({ message: "User does not exist." });
@@ -97,12 +97,64 @@ module.exports.logout = async (req, res) => {
   }
 };
 
+module.exports.changeStatus = async (req, res) => {
+  try {
+    const deactivateUser = await User.findByIdAndUpdate(req.user, { status: "deactivated" }, { new: true });
+    res
+        .cookie("refreshToken", "", { httpOnly: true, secure: true, path: "/api/users/refreshToken" })
+        .json(deactivateUser);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 module.exports.deleteUser = async (req, res) => {
   try {
-    const deletedUser = await User.findByIdAndUpdate(req.user, { status: "sleep" }, { new: true });
+    const deletedUser = await User.findByIdAndDelete(req.user);
     res
         .cookie("refreshToken", "", { httpOnly: true, secure: true, path: "/api/users/refreshToken" })
         .json(deletedUser);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+// here we are assuming that user is already logged in
+module.exports.updateUser = async (req, res) => {
+  try {
+    const { name, email, phone, password } = req.body;
+    if (!name && !email && !phone && !password) {
+      return res
+        .status(400)
+        .json({ message: "Input fields are empty" });
+    }
+
+    const user = await User.findById(req.user);
+    if (!user) {
+      return res.status(400).json({ message: "User does not exist." });
+    }
+    if (password) {
+      const isMatch = await user.comparePassword(password);
+      if (isMatch) {
+        return res.status(400).json({ message: "New password must be different from current password" });
+      }
+      user.password = password;
+    }
+    if (name) {
+      user.name = name;
+    }
+    if (email) {
+      user.email = email;
+    }
+    if (phone) {
+      user.phone = phone;
+    }
+    const updatedUser = await user.save();
+    res
+      .status(200)
+      .json(updatedUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -14,7 +14,8 @@ router.post("/register",createUser.create);
 router.get("/login", checkStatus, createUser.login);
 router.get("/logout", isAuth, createUser.logout);
 router.post("/refreshToken", createUser.refreshToken);
-// router.post("/updateuser", createUser.updateUser);
+router.post("/updateuser", isAuth,createUser.updateUser);
+router.post("/deactivate", isAuth,createUser.changeStatus);
 router.post("/deleteuser", isAuth,createUser.deleteUser);
 
 

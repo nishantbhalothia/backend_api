@@ -14,9 +14,32 @@ const userSchema = new mongoose.Schema({
 // Hash password before saving to DB
 userSchema.pre('save', async function (next) {
     try {
+        if (!this.isModified('password')) {
+            return next();
+        }
+        if (!this.isModified('email')) {
+            return next();
+        }
+        if (!this.isModified('phone')) {
+            return next();
+        }
+        
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(this.password, salt);
         this.password = hashedPassword;
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+userSchema.pre('findByIdAndUpdate', async function (next) {
+    try {
+        if (!this.isModified('status')) {
+            return next();
+        }
+
+        // any logic for future update
         next();
     } catch (error) {
         next(error);
@@ -45,7 +68,7 @@ userSchema.methods.generateRefreshToken = async function () {
 userSchema.methods.comparePassword = async function (password) {
     try {
         const isMatch = await bcrypt.compare(password, this.password);
-        console.log("comparePassword", isMatch);
+        // console.log("comparePassword", isMatch);
         return isMatch;
     } catch (error) {
         console.error(error);
