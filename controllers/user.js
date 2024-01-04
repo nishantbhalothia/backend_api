@@ -90,9 +90,15 @@ module.exports.refreshToken = async (req, res) => {
 
 module.exports.logout = async (req, res) => {
   try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized." });
+    }
+    const logoutUser= await User.findByIdAndUpdate(user, { refreshToken: "" }, { new: true });
+
     res.cookie("refreshToken", "", { httpOnly: true, secure: true, path: "/api/users/refreshToken" })
-    .json({ message: "Logged out." });
-    return res.redirect("/");
+    .status(200)
+    .json({ message: "User logged out." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
