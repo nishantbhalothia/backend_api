@@ -23,13 +23,21 @@ module.exports.create = async (req, res) => {
 module.exports.login = async (req, res) => {
     console.log("userController_login", req.body);
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
+    const { email, password, phone } = req.body;
+    if ((!email || !phone) && !password) {
       return res
         .status(400)
         .json({ message: "Not all fields have been entered." });
     }
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+        $or: [
+            { email: email },
+            { phone: phone },
+        ]
+    });
+
+    console.log("userController_login", user);
+    
     if (!user) {
       return res.status(400).json({ message: "User does not exist." });
     }
@@ -39,8 +47,14 @@ module.exports.login = async (req, res) => {
     }
     const authToken = await user.generateAuthToken();
     const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false});
+
     console.log("refreshToken : ", refreshToken, " ","authToken : ", authToken);
-    res.cookie("refreshToken", refreshToken, {
+
+    return res.
+    cookie("refreshToken", refreshToken, {
       httpOnly: true,
       path: "/api/users/refreshToken",
     })
@@ -67,6 +81,28 @@ module.exports.refreshToken = async (req, res) => {
     }
     const authToken = await user.generateAuthToken();
     res.json({ authToken });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+module.exports.logout = async (req, res) => {
+  try {
+    res.cookie("refreshToken", "", { httpOnly: true, secure: true, path: "/api/users/refreshToken" })
+    .json({ message: "Logged out." });
+    return res.redirect("/");
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports.deleteUser = async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndUpdate(req.user, { status: "sleep" }, { new: true });
+    res
+        .cookie("refreshToken", "", { httpOnly: true, secure: true, path: "/api/users/refreshToken" })
+        .json(deletedUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

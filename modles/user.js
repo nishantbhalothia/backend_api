@@ -4,9 +4,11 @@ const jwt = require('jsonwebtoken');
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    email: { type: String, required: true},
-    phone: { type: String, required: true},
+    email: { type: String, required: true, unique:true},
+    phone: { type: String, required: true, unique:true},
     password: { type: String, required: true },
+    refreshToken: { type: String},
+    status: { type: String, default: "active" },
 }, { timestamps: true } );
 
 // Hash password before saving to DB
@@ -43,6 +45,7 @@ userSchema.methods.generateRefreshToken = async function () {
 userSchema.methods.comparePassword = async function (password) {
     try {
         const isMatch = await bcrypt.compare(password, this.password);
+        console.log("comparePassword", isMatch);
         return isMatch;
     } catch (error) {
         console.error(error);
